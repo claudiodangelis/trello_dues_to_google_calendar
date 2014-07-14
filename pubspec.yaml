@@ -1,0 +1,5 @@
+name: trello_dues_to_google_calendar
+dependencies:
+  google_calendar_v3_api: any
+  http: any
+  logging: any
