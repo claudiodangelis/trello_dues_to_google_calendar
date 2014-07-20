@@ -1,3 +1,7 @@
 flow_chart.graphml
 keys
-
+bin/config.json
+bin/___trello_dues_to_google_calendar.dart
+bin/trello.config.json
+bin/calendar.credentials.json
+bin/gcalendar.config.json
