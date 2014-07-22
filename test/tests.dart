@@ -35,6 +35,10 @@ main() {
   // If a T2C is in current, but not in n<>c intersection, then delete from cal
   Set<Trello2Cal> delete = current.difference(intersection);
 
+  // At the end of the process, we create a new "current", merging together
+  // "skip" and "add" sets
+  Set<Trello2Cal> newCurrent = skip.union(add);
+
 
   test("Testing set: 'skip'", () {
     expect(2, skip.length);
@@ -49,6 +53,11 @@ main() {
   test("Testing set: 'delete'", () {
     expect(3, delete.length);
     expect(true, delete.containsAll([b, d, x]));
+  });
+
+  test("Testing set: 'newCurrent'", () {
+    expect(6, newCurrent.length);
+    expect(true, newCurrent.containsAll([a,z,c,f,b_edit, x_edit]));
   });
 
 }
