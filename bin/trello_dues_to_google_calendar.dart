@@ -6,53 +6,7 @@ import 'package:google_oauth2_client/google_oauth2_console.dart';
 import 'package:google_calendar_v3_api/calendar_v3_api_console.dart' as cal;
 import 'package:google_calendar_v3_api/calendar_v3_api_client.dart';
 
-class Trello2Cal {
-  String cardId;
-  String cardDesc;
-  String cardDue;
-  String cardUrl;
-  String boardName;
-  String eventId; // This is set *after* the insertion in Google Calendar
-  Trello2Cal(Map<String, String> card, String boarName) {
-    cardId = card["id"];
-    cardDesc = card["desc"];
-    cardDue = card["due"];
-    cardUrl = card["url"];
-    boardName = boardName;
-  }
 
-  bool operator ==(Trello2Cal other) {
-    return this.cardId == other.cardId && this.cardDesc == other.cardDesc &&
-        this.cardDue == other.cardDue && this.cardUrl == other.cardUrl;
-  }
-
-  // TODO:
-  String toEventJson() {
-    Map<String, dynamic> _eventMap = {};
-    return JSON.encode(_eventMap);
-  }
-}
-
-class Trello2CalSet<E> extends SetBase<E> {
-  Set<E> _set = new Set<E>();
-
-  Set<E> toSet() => new Set()..addAll(this);
-  int get length => _set.length;
-  Iterator<E> get iterator => _set.iterator;
-  bool add(E elem) => _set.add(elem);
-  bool remove(E elem) => _set.remove(elem);
-  E lookup(E elem) => _set.lookup(elem);
-  // Overriding .contains for fun and profit (and to get intersection working!)
-  bool contains(E elem) {
-    try {
-      _set.singleWhere((E e) => e == elem);
-    } catch (e) {
-      return false;
-    }
-    return true;
-  }
-
-}
 
 final String CONFIG_FILE = "config.json";
 Calendar trelloCal;

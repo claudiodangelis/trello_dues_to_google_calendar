@@ -49,6 +49,10 @@ packages:
     description: logging
     source: hosted
     version: "0.9.1+1"
+  matcher:
+    description: matcher
+    source: hosted
+    version: "0.10.1+1"
   oauth2:
     description: oauth2
     source: hosted
@@ -73,3 +77,7 @@ packages:
     description: string_scanner
     source: hosted
     version: "0.0.3"
+  unittest:
+    description: unittest
+    source: hosted
+    version: "0.11.0+2"
