@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:logging/logging.dart';
+import 'package:trello_dues_to_google_calendar/lib.dart';
 import 'dart:convert' show JSON;
-import 'dart:collection';
 import 'package:google_oauth2_client/google_oauth2_console.dart';
 import 'package:google_calendar_v3_api/calendar_v3_api_console.dart' as cal;
 import 'package:google_calendar_v3_api/calendar_v3_api_client.dart';
@@ -34,6 +34,7 @@ main() {
     log.severe("Trello Keys not found");
     error("Please check your keys");
   }
+  log.fine("OK");
 
   var auth = new OAuth2Console(identifier: config["google_client_id"],
       secret: config["google_client_secret"],
@@ -43,13 +44,16 @@ main() {
   cal.Calendar calendar = new cal.Calendar(auth);
   calendar.makeAuthRequests = true;
 
+  log.info("Checking if Google keys are present");
   if (config["google_client_id"].isEmpty ||
       config["google_client_secret"].isEmpty) {
     log.severe("Google API keys not found");
     error("Please check google api");
   }
+  log.fine("OK");
 
 
+  log.info("Checking if id_trello_calendar is set");
   if (config["id_trello_calendar"].isEmpty) {
     log.warning("Trello calendar id not set");
     log.info("Looking for trello calendar id in Google Calendar");
@@ -74,6 +78,9 @@ main() {
       }
     });
   }
+  log.fine("OK");
+  log.info("Ready to get started retrieving cards");
+
 }
 
 void error(String msg) {
