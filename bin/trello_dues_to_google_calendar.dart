@@ -7,7 +7,6 @@ import 'package:google_calendar_v3_api/calendar_v3_api_console.dart' as cal;
 import 'package:google_calendar_v3_api/calendar_v3_api_client.dart';
 
 
-
 final String CONFIG_FILE = "config.json";
 Calendar trelloCal;
 
@@ -31,10 +30,27 @@ main() {
 
   log.info("Checking if Trello keys are present");
   if (config["trello_key"].isEmpty || config["trello_secret"].isEmpty) {
-    log.severe("Trello Keys not found");
+      log.severe("Trello Keys not found");
     error("Please check your keys");
   }
   log.fine("OK");
+
+  log.info("Checking if trello token is present and valid");
+  if (config["trello_token"].isEmpty) {
+    log.warning("Trello token is not present. Please visit this URL get a token:");
+    String requestTrelloAuthUrl = "https://trello.com/1/authorize?" +
+        "key=" + config["trello_key"] + "&" +
+        "name=" + "TrelloDues2Calendar" + "&" +
+        "expiration=" + "never" + "&" +
+        "response_type=" + "token";
+    log.warning(requestTrelloAuthUrl);
+    print("Paste your token here:");
+    // TODO: set a timeout for this operation
+    String _trelloToken = stdin.readLineSync();
+    updateConfiguration(CONFIG_FILE, "trello_token", _trelloToken);
+  } else {
+    // TODO: check is trello token is valid
+  }
 
   var auth = new OAuth2Console(identifier: config["google_client_id"],
       secret: config["google_client_secret"],
@@ -79,7 +95,12 @@ main() {
     });
   }
   log.fine("OK");
+  log.info("Creating empty 'next' set");
+  Trello2CalSet<Trello2Cal> next = new Trello2CalSet<Trello2Cal>();
+  log.info("Retrieving 'current' set");
+  Trello2CalSet<Trello2Cal> current = getCurrent();
   log.info("Ready to get started retrieving cards");
+
 
 }
 

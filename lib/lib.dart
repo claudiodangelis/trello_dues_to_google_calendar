@@ -3,6 +3,18 @@ library trello_dues_to_google_calendar;
 import 'dart:collection';
 import 'dart:convert' show JSON;
 
+Trello2CalSet<Trello2Cal> getCurrent() {
+  // TODO: write this function
+  return new Trello2CalSet<Trello2Cal>();
+}
+
+bool updateConfiguration(String configFile, String key, String value) {
+  print("Updating config, key: $key");
+  print("Updating config, value: $value");
+  // TODO: write this function
+  return true;
+}
+
 class Trello2Cal {
   String cardId;
   String cardDesc;
