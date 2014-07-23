@@ -43,7 +43,7 @@ main() {
 
   log.info("Checking if trello token is present and valid");
   if (config["trello_token"].isEmpty) {
-    log.warning("Trello token is not present. Please visit this URL get a token:");
+    log.warning("Trello token not present. Please visit this URL get a token:");
     String requestTrelloAuthUrl = "https://trello.com/1/authorize?" +
         "key=" + config["trello_key"] + "&" +
         "name=" + "TrelloDues2Calendar" + "&" +
@@ -105,6 +105,11 @@ main() {
   log.info("Retrieving 'current' set");
   Trello2CalSet<Trello2Cal> current = getCurrent();
 
+  // TODO: more consistent identifiers names
+  Set<Trello2Cal> skipping = new Set<Trello2Cal>();
+  Set<Trello2Cal> adding = new Set<Trello2Cal>();
+  Set<Trello2Cal> deleting = new Set<Trello2Cal>();
+
   // TODO: please find a better name for this identifier
   List futuresQueue = [];
 
@@ -123,6 +128,51 @@ main() {
       });
     }).whenComplete(() {
       log.fine("Done populating next set");
+      log.info("Checking if current set is empty");
+      if (current.isEmpty) {
+        log.info("current set is empty");
+        log.info("Adding next set to adding set");
+        adding.addAll(next);
+      } else {
+        log.info("current set is not empty");
+        Set<Trello2Cal> intersection = current.intersection(next);
+        log.info("Adding skipping");
+        skipping = intersection;
+        log.info("Adding deleting");
+        deleting = current.difference(intersection);
+        log.info("Adding adding");
+        adding = next.difference(intersection);
+      }
+
+      log.info("Pushing data to google calendar");
+
+      if (adding.isNotEmpty) {
+        adding.forEach((Trello2Cal event) {
+          log.info("Adding ${event.cardDesc}");
+        });
+      }
+
+      log.info("Removing events");
+      if (deleting.isNotEmpty) {
+        deleting.forEach((Trello2Cal event) {
+          log.info("Deleting: ${event.cardDesc}");
+        });
+      }
+
+      log.info("Clearing current");
+      current.clear();
+      log.info("Creating a new current");
+      skipping.forEach((Trello2Cal t2c) {
+        current.add(t2c);
+      });
+
+      adding.forEach((Trello2Cal t2c) {
+        current.add(t2c);
+      });
+
+      log.info("New current count: ${current.length}");
+      log.info("Writing current to config file");
+
     });
   });
 }
