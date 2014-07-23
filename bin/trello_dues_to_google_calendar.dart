@@ -147,8 +147,14 @@ main() {
       log.info("Pushing data to google calendar");
 
       if (adding.isNotEmpty) {
-        adding.forEach((Trello2Cal event) {
-          log.info("Adding ${event.cardDesc}");
+        adding.forEach((Trello2Cal t2c) {
+          log.info("Adding ${t2c.cardDesc}");
+          calendar.events.insert(new Event.fromJson(t2c.toEventJson()),
+              config["id_trello_calendar"], optParams:
+              {"approval_prompt": "auto"}).then((Event event) {
+
+            t2c.eventId = event.id;
+          });
         });
       }
 
@@ -173,6 +179,10 @@ main() {
       log.info("New current count: ${current.length}");
       log.info("Writing current to config file");
 
+      log.info("Checking if ids are set");
+      current.forEach((Trello2Cal t2c) {
+        log.info(t2c.eventId);
+      });
     });
   });
 }
