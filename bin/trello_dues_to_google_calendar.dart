@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:trello_dues_to_google_calendar/lib.dart';
 import 'dart:convert' show JSON;
@@ -13,6 +14,9 @@ final bool noPastDues = true; // TODO: Move this in config.json
 List<Map<String, dynamic>> _boards;
 List<Map<String, dynamic>> _cards;
 
+final Logger log = new Logger('TrelloDues2Calendar');
+File configFile;
+Map<String, String> config;
 main() {
   // TODO: add --debug flag
 
@@ -22,12 +26,11 @@ main() {
   Logger.root.onRecord.listen((LogRecord rec) {
     print('[${rec.level.name}] ${rec.message}');
   });
-  final Logger log = new Logger('TrelloDues2Calendar');
 
   log.info("Starting app");
   log.info("Reading $CONFIG_FILE");
-  File configFile = new File(CONFIG_FILE);
-  Map<String, String> config = JSON.decode(configFile.readAsStringSync());
+  configFile = new File(CONFIG_FILE);
+  config = JSON.decode(configFile.readAsStringSync());
   log.info("Configuration:");
   log.info(config.toString());
 
@@ -71,7 +74,6 @@ main() {
   }
   log.fine("OK");
 
-
   log.info("Checking if id_trello_calendar is set");
   if (config["id_trello_calendar"].isEmpty) {
     log.warning("Trello calendar id not set");
@@ -102,51 +104,79 @@ main() {
   Trello2CalSet<Trello2Cal> next = new Trello2CalSet<Trello2Cal>();
   log.info("Retrieving 'current' set");
   Trello2CalSet<Trello2Cal> current = getCurrent();
-  log.info("Ready to get started retrieving cards");
 
+  // TODO: please find a better name for this identifier
+  List futuresQueue = [];
+
+  log.info("Ready to get started retrieving boards and cards");
+  getBoards().then((List<Map<String, dynamic>> boards) {
+    boards.forEach((board) {
+      futuresQueue.add(getCards(board));
+    });
+    Future.wait(futuresQueue).then((List<Trello2CalSet> responses) {
+      responses.forEach((Trello2CalSet resp) {
+        if (resp.isNotEmpty) {
+          resp.forEach((Trello2Cal t2c) {
+            next.add(t2c);
+          });
+        }
+      });
+    }).whenComplete(() {
+      log.fine("Done populating next set");
+    });
+  });
+}
+
+Future<List<Map<String, dynamic>>> getBoards() {
+  Completer completer = new Completer();
   // Boards URL
   String boardsUrl = "https://api.trello.com/1/members/me/boards?" +
-                     "filter=open" + "&" +
-                     "key=" + config["trello_key"] + "&" +
-                     "token=" + config["trello_token"];
+               "filter=open" + "&" +
+               "key=" + config["trello_key"] + "&" +
+               "token=" + config["trello_token"];
   // TODO:
   // Gets all the baords
   http.get(boardsUrl).then((http.Response boardsResp) {
-    // Populating list with all boards
-    _boards = JSON.decode(boardsResp.body);
-    // Getting now all the cards for each board
-    _boards.forEach((Map<String, dynamic> _board) {
-      // Board id (to use to retrieve cards)
-      String _boardId = _board["id"];
-      // Board name (to use to build the Trello2Cal element)
-      String _boardName = _board["name"];
-      // Build the retrive-card string
-      String cardsUrl = "https://api.trello.com/1/boards/$_boardId/cards?" +
-          "card_fields=due" + "&" +
-          "key=" + config["trello_key"] + "&" +
-          "token=" + config["trello_token"];
-
-      // Retrieving all the cards
-      http.get(cardsUrl).then((http.Response cardsResp) {
-        _cards = JSON.decode(cardsResp.body);
-        // Selecting only cards with due date
-        _cards.forEach((Map<String, dynamic> _card) {
-          if (_card["due"] != null) {
-            // Performing check wether it wants or not past dues
-            DateTime now = new DateTime.now();
-            int compare = now.compareTo(DateTime.parse(_card["due"]));
-            if (!noPastDues || (noPastDues && compare.isNegative)) {
-              // This is the card we're looking for
-              log.info("===");
-              log.info(_board["name"]);
-              log.info(_card["name"]);
-              log.info("===");
-            }
-          }
-        });
-      });
-    });
+    completer.complete(JSON.decode(boardsResp.body));
   });
+  return completer.future;
+}
+
+Future<Trello2CalSet<Trello2Cal>> getCards(Map<String, dynamic> _board) {
+  Completer completer = new Completer();
+  Trello2CalSet<Trello2Cal> set = new Trello2CalSet<Trello2Cal>();
+  // Board id (to use to retrieve cards)
+  String _boardId = _board["id"];
+  // Board name (to use to build the Trello2Cal element)
+  String _boardName = _board["name"];
+  // Build the retrive-card string
+  String cardsUrl = "https://api.trello.com/1/boards/$_boardId/cards?" +
+      "card_fields=due" + "&" +
+      "key=" + config["trello_key"] + "&" +
+      "token=" + config["trello_token"];
+
+  // Retrieving all the cards
+  http.get(cardsUrl).then((http.Response cardsResp) {
+    _cards = JSON.decode(cardsResp.body);
+    // Selecting only cards with due date
+    _cards.forEach((Map<String, dynamic> _card) {
+      if (_card["due"] != null) {
+        // Performing check wether it wants or not past dues
+        DateTime now = new DateTime.now();
+        int compare = now.compareTo(DateTime.parse(_card["due"]));
+        if (!noPastDues || (noPastDues && compare.isNegative)) {
+          // This is the card we're looking for
+          log.fine("Found a card with due:");
+          log.info("Board name ${_board["name"]}");
+          log.info("Card name: ${_card["name"]}");
+          log.info("Due date: ${_card["due"]}");
+          set.add(new Trello2Cal(_card, _board["name"]));
+        }
+      }
+    });
+    completer.complete(set);
+  });
+  return completer.future;
 }
 
 void error(String msg) {
