@@ -2,17 +2,46 @@ library trello_dues_to_google_calendar;
 
 import 'dart:collection';
 import 'dart:convert' show JSON;
+import 'dart:io';
+
+final String CONFIG_FILE = 'config.json';
 
 Trello2CalSet<Trello2Cal> getCurrent() {
   // TODO: write this function
-  return new Trello2CalSet<Trello2Cal>();
+  File configFile = new File(CONFIG_FILE);
+  Map<String, dynamic> config = JSON.decode(configFile.readAsStringSync());
+  Trello2CalSet<Trello2Cal> _set = new Trello2CalSet<Trello2Cal>();
+  if (config["current"] != null) {
+    List<String> currentAsList = config["current"];
+    currentAsList.forEach((String json) {
+      _set.add(new Trello2Cal.fromJson(json));
+    });
+    return _set;
+  }
+  updateConfiguration(CONFIG_FILE, "current", []);
+  return _set;
 }
 
-bool updateConfiguration(String configFile, String key, String value) {
+// TODO:
+// TODO: if possible, pretty-print json
+bool updateConfiguration(String configFilePath, String key, dynamic value) {
   print("Updating config, key: $key");
   print("Updating config, value: $value");
   // TODO: write this function
-  return true;
+  File configFile = new File(configFilePath);
+  // Read the conf
+  // FIXME: what if the contents are not valid json?
+  Map<String, dynamic> config = JSON.decode(configFile.readAsStringSync());
+  // Add/replace the key
+  config[key] = value;
+  // Write down the conf again
+  try {
+    configFile.writeAsStringSync(JSON.encode(config), mode: WRITE);
+    return true;
+  } catch (FileSystemException) {
+    print(FileSystemException);
+  }
+  return false;
 }
 
 class Trello2Cal {
@@ -38,7 +67,6 @@ class Trello2Cal {
         this.boardName == other.boardName && this.cardName == other.cardName;
   }
 
-  // TODO:
   Map<String, dynamic> toEventJson() {
 
     String description = this.cardDesc != null
@@ -53,6 +81,30 @@ class Trello2Cal {
     _eventMap["summary"] = this.boardName + ": " + this.cardName;
     _eventMap["description"] = description;
     return _eventMap;
+  }
+
+  String toString() {
+    Map<String, String> _map = {};
+    _map["cardId"] = this.cardId;
+    _map["cardDesc"] = this.cardDesc;
+    _map["cardDue"] = this.cardDue;
+    _map["cardUrl"] = this.cardUrl;
+    _map["cardName"] = this.cardName;
+    _map["boardName"] = this.boardName;
+    _map["eventId"] = this.eventId;
+
+    return JSON.encode(_map);
+  }
+
+  Trello2Cal.fromJson(String json) {
+    Map<String, String> _map = JSON.decode(json);
+    this.boardName = _map["boardName"];
+    this.cardDesc = _map["cardDesc"];
+    this.cardDue = _map["cardDue"];
+    this.cardId = _map["cardId"];
+    this.cardName = _map["cardName"];
+    this.cardUrl = _map["cardUrl"];
+    this.eventId = _map["eventId"];
   }
 }
 

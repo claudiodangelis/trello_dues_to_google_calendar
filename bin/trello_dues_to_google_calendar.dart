@@ -9,14 +9,16 @@ import 'package:google_calendar_v3_api/calendar_v3_api_client.dart';
 import 'package:http/http.dart' as http;
 
 final String CONFIG_FILE = "config.json";
-Calendar trelloCal;
 final bool noPastDues = true; // TODO: Move this in config.json
 List<Map<String, dynamic>> _boards;
 List<Map<String, dynamic>> _cards;
 
+String trelloCalId;
+
 final Logger log = new Logger('TrelloDues2Calendar');
 File configFile;
 Map<String, String> config;
+cal.Calendar calendar;
 main() {
   // TODO: add --debug flag
 
@@ -30,11 +32,17 @@ main() {
   log.info("Starting app");
   log.info("Reading $CONFIG_FILE");
   configFile = new File(CONFIG_FILE);
+  // FIXME ASAP: possibly the nastiest workaround ever
+  if (!configFile.existsSync()){
+    configFile.writeAsStringSync({}.toString());
+  }
   config = JSON.decode(configFile.readAsStringSync());
   log.info("Configuration:");
   log.info(config.toString());
 
-  log.info("Checking if Trello keys are present");
+
+
+  // FIXME:
   if (config["trello_key"].isEmpty || config["trello_secret"].isEmpty) {
       log.severe("Trello Keys not found");
     error("Please check your keys");
@@ -63,7 +71,7 @@ main() {
       scopes: config["google_scopes"] as List,
       credentialsFilePath: config["google_credentials"]);
 
-  cal.Calendar calendar = new cal.Calendar(auth);
+  calendar = new cal.Calendar(auth);
   calendar.makeAuthRequests = true;
 
   log.info("Checking if Google keys are present");
@@ -84,20 +92,24 @@ main() {
       // type 'CalendarListEntry' is not a subtype of type 'Calendar' in
       // type cast.
       try {
-        trelloCal = list.items.singleWhere((calEntry) {
-          return calEntry.summary.toLowerCase() == "trello";
-        }) as Calendar; // FIXME: failing type cast
+        trelloCalId = list.items.singleWhere((calEntry) {
+          return calEntry.summary.toLowerCase() == "trellofinale";
+        }).id; // FIXME: failing type cast
 
       } catch (StateError) {
         log.severe("Trello calendar is not present");
         log.severe(StateError.toString());
-        Calendar calendarRequest = new Calendar.fromJson({"summary": "Trello"});
+        Calendar calendarRequest = new Calendar.fromJson({"summary": "trellofinale"});
         calendar.calendars.insert(calendarRequest).then((Calendar cal) {
           log.fine("Trello Calendar successfully created");
-          trelloCal = cal;
+          trelloCalId = cal.id;
+          updateConfiguration(CONFIG_FILE, "id_trello_calendar", cal.id);
+          print(trelloCalId);
         });
       }
     });
+  } else {
+    trelloCalId = config["id_trello_calendar"];
   }
   log.fine("OK");
   log.info("Creating empty 'next' set");
@@ -146,17 +158,37 @@ main() {
 
       log.info("Pushing data to google calendar");
 
+      Set<Trello2Cal> newCurrent = new Set<Trello2Cal>();
+
+      List addingQueue = [];
+
       if (adding.isNotEmpty) {
         adding.forEach((Trello2Cal t2c) {
-          log.info("Adding ${t2c.cardDesc}");
-          calendar.events.insert(new Event.fromJson(t2c.toEventJson()),
-              config["id_trello_calendar"], optParams:
-              {"approval_prompt": "auto"}).then((Event event) {
-
-            t2c.eventId = event.id;
-          });
+          addingQueue.add(addTrello2Cals(t2c));
         });
       }
+
+      Future.wait(addingQueue).then((List<Map<Trello2Cal, Event>> responses) {
+        responses.forEach((Map<Trello2Cal, Event> resp) {
+          resp.forEach((t2c, event) {
+            t2c.eventId = event.id;
+            newCurrent.add(t2c);
+          });
+        });
+      }).whenComplete(() {
+        log.info("Preparing new current to be written to file"); // grammar ok?
+        List<String> currentAsList = [];
+        newCurrent.forEach((Trello2Cal t2c) {
+          currentAsList.add(t2c.toString());
+        });
+
+        skipping.forEach((Trello2Cal t2c) {
+          currentAsList.add(t2c.toString());
+        });
+
+         updateConfiguration(CONFIG_FILE, "current", currentAsList);
+        });
+      });
 
       log.info("Removing events");
       if (deleting.isNotEmpty) {
@@ -164,27 +196,21 @@ main() {
           log.info("Deleting: ${event.cardDesc}");
         });
       }
-
-      log.info("Clearing current");
-      current.clear();
-      log.info("Creating a new current");
-      skipping.forEach((Trello2Cal t2c) {
-        current.add(t2c);
-      });
-
-      adding.forEach((Trello2Cal t2c) {
-        current.add(t2c);
-      });
-
-      log.info("New current count: ${current.length}");
-      log.info("Writing current to config file");
-
-      log.info("Checking if ids are set");
-      current.forEach((Trello2Cal t2c) {
-        log.info(t2c.eventId);
-      });
     });
+}
+
+Future<Map<Trello2Cal, Event>> addTrello2Cals(Trello2Cal t2c) {
+  Completer completer = new Completer();
+  print(trelloCalId);
+  log.info("Adding ${t2c.cardName} to Google Calendar");
+  calendar.events.insert(new Event.fromJson(t2c.toEventJson()),
+      trelloCalId, optParams:
+      {"approval_prompt": "auto"}).then((Event event) {
+
+    completer.complete({t2c:event});
   });
+  return completer.future;
+
 }
 
 Future<List<Map<String, dynamic>>> getBoards() {

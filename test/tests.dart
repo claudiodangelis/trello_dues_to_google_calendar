@@ -27,6 +27,8 @@ main() {
     expect(false, b == b_edit);
   });
 
+
+
   Set<Trello2Cal> intersection = current.intersection(next);
   // If two `Trello2Cal`'s are equal, then do nothing with them
   Set<Trello2Cal> skip = intersection;
