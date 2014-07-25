@@ -62,6 +62,7 @@ class Trello2Cal {
   }
 
   bool operator ==(Trello2Cal other) {
+
     return this.cardId == other.cardId && this.cardDesc == other.cardDesc &&
         this.cardDue == other.cardDue && this.cardUrl == other.cardUrl &&
         this.boardName == other.boardName && this.cardName == other.cardName;

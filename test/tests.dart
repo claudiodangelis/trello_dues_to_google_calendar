@@ -19,6 +19,14 @@ main() {
   Trello2CalSet<Trello2Cal> next = new Trello2CalSet<Trello2Cal>();
   Trello2CalSet<Trello2Cal> current = new Trello2CalSet<Trello2Cal>();
 
+
+  next.addAll([a, z]);
+  current.addAll([a,z]);
+
+  Set<Trello2Cal> _adding = next.difference(current.intersection(next));
+
+  print(_adding);
+
   next.addAll([a, b_edit, c, z, f, x_edit]);
   current.addAll([a, b, d, x, z]);
 
@@ -26,6 +34,8 @@ main() {
     expect(true, a == a_current);
     expect(false, b == b_edit);
   });
+
+
 
 
 

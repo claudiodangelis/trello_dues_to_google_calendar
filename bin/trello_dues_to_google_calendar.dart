@@ -33,7 +33,7 @@ main() {
   log.info("Reading $CONFIG_FILE");
   configFile = new File(CONFIG_FILE);
   // FIXME ASAP: possibly the nastiest workaround ever
-  if (!configFile.existsSync()){
+  if (!configFile.existsSync()) {
     configFile.writeAsStringSync({}.toString());
   }
   config = JSON.decode(configFile.readAsStringSync());
@@ -44,7 +44,7 @@ main() {
 
   // FIXME:
   if (config["trello_key"].isEmpty || config["trello_secret"].isEmpty) {
-      log.severe("Trello Keys not found");
+    log.severe("Trello Keys not found");
     error("Please check your keys");
   }
   log.fine("OK");
@@ -52,11 +52,9 @@ main() {
   log.info("Checking if trello token is present and valid");
   if (config["trello_token"].isEmpty) {
     log.warning("Trello token not present. Please visit this URL get a token:");
-    String requestTrelloAuthUrl = "https://trello.com/1/authorize?" +
-        "key=" + config["trello_key"] + "&" +
-        "name=" + "TrelloDues2Calendar" + "&" +
-        "expiration=" + "never" + "&" +
-        "response_type=" + "token";
+    String requestTrelloAuthUrl = "https://trello.com/1/authorize?" + "key=" +
+        config["trello_key"] + "&" + "name=" + "TrelloDues2Calendar" + "&" +
+        "expiration=" + "never" + "&" + "response_type=" + "token";
     log.warning(requestTrelloAuthUrl);
     print("Paste your token here:");
     // TODO: set a timeout for this operation
@@ -66,9 +64,8 @@ main() {
     // TODO: check is trello token is valid
   }
 
-  var auth = new OAuth2Console(identifier: config["google_client_id"],
-      secret: config["google_client_secret"],
-      scopes: config["google_scopes"] as List,
+  var auth = new OAuth2Console(identifier: config["google_client_id"], secret:
+      config["google_client_secret"], scopes: config["google_scopes"] as List,
       credentialsFilePath: config["google_credentials"]);
 
   calendar = new cal.Calendar(auth);
@@ -86,20 +83,20 @@ main() {
   if (config["id_trello_calendar"].isEmpty) {
     log.warning("Trello calendar id not set");
     log.info("Looking for trello calendar id in Google Calendar");
-    calendar.calendarList.list(
-        optParams: {"approval_prompt": "auto"}).then((CalendarList list) {
-      // FIXME:
-      // type 'CalendarListEntry' is not a subtype of type 'Calendar' in
-      // type cast.
+    calendar.calendarList.list(optParams: {
+      "approval_prompt": "auto"
+    }).then((CalendarList list) {
       try {
         trelloCalId = list.items.singleWhere((calEntry) {
-          return calEntry.summary.toLowerCase() == "trellofinale";
-        }).id; // FIXME: failing type cast
+          return calEntry.summary.toLowerCase() == "aaatrellofinale";
+        }).id;
 
       } catch (StateError) {
         log.severe("Trello calendar is not present");
         log.severe(StateError.toString());
-        Calendar calendarRequest = new Calendar.fromJson({"summary": "trellofinale"});
+        Calendar calendarRequest = new Calendar.fromJson({
+          "summary": "aaatrellofinale"
+        });
         calendar.calendars.insert(calendarRequest).then((Calendar cal) {
           log.fine("Trello Calendar successfully created");
           trelloCalId = cal.id;
@@ -116,11 +113,18 @@ main() {
   Trello2CalSet<Trello2Cal> next = new Trello2CalSet<Trello2Cal>();
   log.info("Retrieving 'current' set");
   Trello2CalSet<Trello2Cal> current = getCurrent();
+  log.info("Dump current set:");
+  log.info(current.toString());
 
-  // TODO: more consistent identifiers names
-  Set<Trello2Cal> skipping = new Set<Trello2Cal>();
-  Set<Trello2Cal> adding = new Set<Trello2Cal>();
-  Set<Trello2Cal> deleting = new Set<Trello2Cal>();
+  Set<Trello2Cal> intersection;
+  // If two `Trello2Cal`'s are equal, then do nothing with them
+  Set<Trello2Cal> skipping = new Trello2CalSet<Trello2Cal>();;
+  // If a T2C is in next, but not in next<>current intersection, then add to cal
+  Set<Trello2Cal> adding = new Trello2CalSet<Trello2Cal>();
+  // If a T2C is in current, but not in n<>c intersection, then delete from cal
+  Set<Trello2Cal> deleting = new Trello2CalSet<Trello2Cal>();
+
+
 
   // TODO: please find a better name for this identifier
   List futuresQueue = [];
@@ -146,14 +150,24 @@ main() {
         log.info("Adding next set to adding set");
         adding.addAll(next);
       } else {
-        log.info("current set is not empty");
-        Set<Trello2Cal> intersection = current.intersection(next);
-        log.info("Adding skipping");
+        log.info("Current set not empty");
+        // TODO: more consistent identifiers names
+        log.info("INTERSECTION");
+        intersection = current.intersection(next);
+        log.info(intersection.toString());
+        // If two `Trello2Cal`'s are equal, then do nothing with them
         skipping = intersection;
-        log.info("Adding deleting");
+        print("SKIPPING");
+        print(skipping.toString());
+        // If a T2C is in next, but not in next<>current intersection, then add to cal
+        log.info("ADDING:");
+        // TODO: current.intersection(next) doesn't work
+        adding = next.difference(next.intersection(current));
+        log.info(adding.toString());
+        // If a T2C is in current, but not in n<>c intersection, then delete from cal
+        log.info("DELETING:");
         deleting = current.difference(intersection);
-        log.info("Adding adding");
-        adding = next.difference(intersection);
+        log.info(deleting.toString());
       }
 
       log.info("Pushing data to google calendar");
@@ -186,17 +200,19 @@ main() {
           currentAsList.add(t2c.toString());
         });
 
-         updateConfiguration(CONFIG_FILE, "current", currentAsList);
-        });
-      });
+        log.info("Removing events");
+        if (deleting.isNotEmpty || deleting == null) {
+          deleting.forEach((Trello2Cal t2c) {
+            log.info("Deleting: ${t2c.cardDesc}");
 
-      log.info("Removing events");
-      if (deleting.isNotEmpty) {
-        deleting.forEach((Trello2Cal event) {
-          log.info("Deleting: ${event.cardDesc}");
-        });
-      }
+            calendar.events.delete(trelloCalId, t2c.eventId);
+          });
+        }
+        updateConfiguration(CONFIG_FILE, "current", currentAsList);
+      });
     });
+
+  });
 }
 
 Future<Map<Trello2Cal, Event>> addTrello2Cals(Trello2Cal t2c) {
@@ -217,9 +233,8 @@ Future<List<Map<String, dynamic>>> getBoards() {
   Completer completer = new Completer();
   // Boards URL
   String boardsUrl = "https://api.trello.com/1/members/me/boards?" +
-               "filter=open" + "&" +
-               "key=" + config["trello_key"] + "&" +
-               "token=" + config["trello_token"];
+      "filter=open" + "&" + "key=" + config["trello_key"] + "&" + "token=" +
+      config["trello_token"];
   // TODO:
   // Gets all the baords
   http.get(boardsUrl).then((http.Response boardsResp) {
@@ -237,9 +252,8 @@ Future<Trello2CalSet<Trello2Cal>> getCards(Map<String, dynamic> _board) {
   String _boardName = _board["name"];
   // Build the retrive-card string
   String cardsUrl = "https://api.trello.com/1/boards/$_boardId/cards?" +
-      "card_fields=due" + "&" +
-      "key=" + config["trello_key"] + "&" +
-      "token=" + config["trello_token"];
+      "card_fields=due" + "&" + "key=" + config["trello_key"] + "&" + "token=" +
+      config["trello_token"];
 
   // Retrieving all the cards
   http.get(cardsUrl).then((http.Response cardsResp) {
