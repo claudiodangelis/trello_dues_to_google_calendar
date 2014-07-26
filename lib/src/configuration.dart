@@ -14,17 +14,20 @@ Trello2CalSet<Trello2Cal> getCurrent() {
     });
     return _set;
   }
-  updateConfiguration(CONFIG_FILE, "current", []);
+  updateConfiguration("current", []);
   return _set;
 }
 
 // TODO:
 // TODO: if possible, pretty-print json
-bool updateConfiguration(String configFilePath, String key, dynamic value) {
+bool updateConfiguration(String key, dynamic value) {
   print("Updating config, key: $key");
   print("Updating config, value: $value");
-  // TODO: write this function
-  File configFile = new File(configFilePath);
+  File configFile = new File(getFilePath(CONFIG_FILE));
+  if (!configFile.existsSync()) {
+    configFile.createSync();
+    configFile.writeAsStringSync('{}');
+  }
   // Read the conf
   // FIXME: what if the contents are not valid json?
   Map<String, dynamic> config = JSON.decode(configFile.readAsStringSync());
@@ -38,4 +41,24 @@ bool updateConfiguration(String configFilePath, String key, dynamic value) {
     print(FileSystemException);
   }
   return false;
+}
+
+bool configure() {
+
+  return true;
+}
+
+Map<String, dynamic> getConfiguration() {
+  File configFile = new File(getFilePath(CONFIG_FILE));
+  if (!configFile.existsSync()) {
+    print("Fatal error, config.json not found.");
+    print("Please run this script and add the '--configure' flag");
+    exit(1);
+  }
+  return JSON.decode(configFile.readAsStringSync());
+}
+
+String getFilePath(String path) {
+  Directory _parent = new Directory.fromUri(Platform.script).parent;
+  return _parent.path  + Platform.pathSeparator + CONFIG_FILE;
 }
