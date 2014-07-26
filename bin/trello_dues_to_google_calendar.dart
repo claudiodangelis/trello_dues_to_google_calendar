@@ -88,14 +88,14 @@ main() {
     }).then((CalendarList list) {
       try {
         trelloCalId = list.items.singleWhere((calEntry) {
-          return calEntry.summary.toLowerCase() == "aaatrellofinale";
+          return calEntry.summary.toLowerCase() == "trello";
         }).id;
 
       } catch (StateError) {
         log.severe("Trello calendar is not present");
         log.severe(StateError.toString());
         Calendar calendarRequest = new Calendar.fromJson({
-          "summary": "aaatrellofinale"
+          "summary": "Trello"
         });
         calendar.calendars.insert(calendarRequest).then((Calendar cal) {
           log.fine("Trello Calendar successfully created");
