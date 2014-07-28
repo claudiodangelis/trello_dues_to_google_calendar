@@ -14,9 +14,9 @@ void wizard() {
   if (_answer[0].toLowerCase() == 'y') {
     // TODO
     // Yes
-    // Scrivi file conf vuoto
+    // Write empty conf file
     createEmptyConfiguration();
-    // Acquisisci trello key
+    // Get trello keys
     print("""
 Please visit
 
@@ -34,7 +34,7 @@ in order to generate Trello API Key and Secret.
     }
     updateConfiguration("trello_key", _trelloApiKey.trim());
 
-    // Acquisisci trello_secret
+    // Get trello_secret
     print("Insert Trello API Secret:");
     String _trelloApiSecret = stdin.readLineSync();
     if (_trelloApiSecret.trim().isEmpty) {
@@ -57,7 +57,7 @@ APIs. When you're ready paste here the following keys:
 2) Google Client Secret.
 """);
 
-    // Acquisisci google_client_id
+    // Get google_client_id
     print("Insert 'Google Client ID':");
     String _googleClientId = stdin.readLineSync();
     if (_googleClientId.trim().isEmpty) {
@@ -77,7 +77,7 @@ APIs. When you're ready paste here the following keys:
 
     updateConfiguration("google_client_secret", _googleClientSecret.trim());
 
-    // Creo campi vuoti:
+    // Creating empty fields:
     // Trello token
     updateConfiguration("trello_token", "");
     // id_trello_calendar
