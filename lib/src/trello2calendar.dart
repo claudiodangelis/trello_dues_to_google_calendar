@@ -63,4 +63,5 @@ class Trello2Cal {
     this.cardUrl = _map["cardUrl"];
     this.eventId = _map["eventId"];
   }
+
 }

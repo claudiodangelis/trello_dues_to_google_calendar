@@ -165,9 +165,8 @@ void createEmptyConfiguration() {
   f.writeAsStringSync('{}');
 }
 
-/*
 Trello2CalSet<Trello2Cal> getCurrent() {
-  // TODO: write this function
+  // TODO: double check this function
   File configFile = new File(CONFIG_FILE);
   Map<String, dynamic> config = JSON.decode(configFile.readAsStringSync());
   Trello2CalSet<Trello2Cal> _set = new Trello2CalSet<Trello2Cal>();
@@ -181,6 +180,7 @@ Trello2CalSet<Trello2Cal> getCurrent() {
   updateConfiguration("current", []);
   return _set;
 }
+/*
 
 // TODO:
 // TODO: if possible, pretty-print json
