@@ -100,6 +100,42 @@ APIs. When you're ready paste here the following keys:
 
 }
 
+bool checkConfiguration() {
+  // TODO: refactor
+  File f = new File(getFilePath(CONFIG_FILE));
+  if (!f.existsSync()) {
+    createEmptyConfiguration();
+  }
+  Map<String, dynamic> config = readConfiguration();
+
+  if (config == {}) {
+    return false;
+  }
+
+  // Checking not null values
+  List values = ["google_client_id", "google_client_secret", "trello_key",
+                 "trello_secret"];
+
+  for (var i = 0; i < values.length; i++) {
+    if (!_isConfigurationItemValid(config[values[i]])) {
+      return false;
+    }
+
+  }
+
+  if (config["trello_token"] == null || config["id_trello_calendar"] == null ||
+      config["google_credentials"] == null || config["google_scopes"] == null) {
+    return false;
+  }
+
+  return true;
+}
+
+bool _isConfigurationItemValid(item) {
+  print(item + ": " +((item != null && item != "")).toString());
+  return (item != null && (item as String).isNotEmpty);
+}
+
 String getFilePath(String path) {
   Directory _parent = new Directory.fromUri(Platform.script).parent;
   return _parent.path  + Platform.pathSeparator + CONFIG_FILE;

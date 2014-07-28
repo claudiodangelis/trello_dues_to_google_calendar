@@ -15,7 +15,11 @@ main(List<String> args) {
 
   // Parser configuration
   ArgParser parser = new ArgParser();
-  parser.addFlag('configure', negatable: false, callback: (configure) {
+  bool configure;
+  parser.addFlag('configure', negatable: false, defaultsTo: false,
+      callback: (_configure) {
+
+    configure = _configure;
     if (configure) {
       // Start configuration process
       wizard();
@@ -28,5 +32,17 @@ main(List<String> args) {
 
   parser.parse(args);
   print("Starting the app...");
+  if (!configure) {
+    log.info("Checking configuration integrity");
+    if (!checkConfiguration()) {
+      error("Invalid configuration. Run this app with the --configure flag");
+    }
+    log.info("Configuration is valid.");
+  }
 }
 
+void error(String msg) {
+  print("Error: $msg");
+  print("Quitting.");
+  exit(1);
+}
