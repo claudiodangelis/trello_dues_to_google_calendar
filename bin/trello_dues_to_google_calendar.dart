@@ -29,8 +29,8 @@ main(List<String> args) {
   // Parser configuration
   ArgParser parser = new ArgParser();
   bool configure;
-  parser.addFlag('configure', negatable: false, defaultsTo: false,
-      callback: (_configure) {
+  parser.addFlag('configure', negatable: false, defaultsTo: false, callback:
+      (_configure) {
 
     configure = _configure;
     if (configure) {
@@ -58,6 +58,7 @@ main(List<String> args) {
         credentialsFilePath: config["google_credentials"]);
 
     calendar = new cal.Calendar(auth);
+    // TODO: check if authorized
     calendar.makeAuthRequests = true;
 
     log.info("Checking Trello configuration");
@@ -116,7 +117,8 @@ main(List<String> args) {
 
     Trello2CalSet<Trello2Cal> next = new Trello2CalSet<Trello2Cal>();
     Trello2CalSet<Trello2Cal> current = getCurrent();
-    Set<Trello2Cal> skipping = new Trello2CalSet<Trello2Cal>();;
+    Set<Trello2Cal> skipping = new Trello2CalSet<Trello2Cal>();
+    ;
     Set<Trello2Cal> adding = new Trello2CalSet<Trello2Cal>();
     Set<Trello2Cal> deleting = new Trello2CalSet<Trello2Cal>();
 
@@ -216,10 +218,13 @@ Future<Map<Trello2Cal, Event>> addTrello2Cals(Trello2Cal t2c) {
   print(config["id_trello_calendar"]);
   log.info("Adding ${t2c.cardName} to Google Calendar");
   calendar.events.insert(new Event.fromJson(t2c.toEventJson()),
-      config["id_trello_calendar"], optParams:
-      {"approval_prompt": "auto"}).then((Event event) {
+      config["id_trello_calendar"], optParams: {
+    "approval_prompt": "auto"
+  }).then((Event event) {
 
-    completer.complete({t2c:event});
+    completer.complete({
+      t2c: event
+    });
   });
   return completer.future;
 
