@@ -29,6 +29,7 @@ main(List<String> args) {
   // Parser configuration
   ArgParser parser = new ArgParser();
   bool configure;
+  bool runAfterWizard = false;
   parser.addFlag('configure', negatable: false, defaultsTo: false, callback:
       (_configure) {
 
@@ -38,13 +39,15 @@ main(List<String> args) {
       wizard();
       print("Finished configuration.\n"
           "Press <Enter> to run the app (recommended) or CTRL+C to exit.");
+      // TODO:
       String _ = stdin.readLineSync();
+      runAfterWizard = true;
     }
   });
 
   parser.parse(args);
   print("Starting the app...");
-  if (!configure) {
+  if (!configure || runAfterWizard) {
     log.info("Checking configuration integrity");
     if (!checkConfiguration()) {
       error("Invalid configuration. Run this app with the --configure flag");
