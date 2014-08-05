@@ -23,7 +23,6 @@ main(List<String> args) {
   // Logger configuration
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((LogRecord rec) {
-    // TODO: add a timestamp
     print('[${rec.level.name}] ${rec.time} ${rec.message}');
   });
 
