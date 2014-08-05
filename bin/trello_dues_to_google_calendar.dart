@@ -23,7 +23,8 @@ main(List<String> args) {
   // Logger configuration
   Logger.root.level = Level.ALL;
   Logger.root.onRecord.listen((LogRecord rec) {
-    print('[${rec.level.name}] ${rec.message}');
+    // TODO: add a timestamp
+    print('[${rec.level.name}] ${rec.time} ${rec.message}');
   });
 
   // Parser configuration
@@ -67,7 +68,7 @@ main(List<String> args) {
     log.info("Checking Trello configuration");
 
     // Checking if Trello token is present
-    // FIXME/TODO: what happens if token is invalid / expired?
+    // FIXME/TODO: what happens if token is invalid / revoked?
     if ((config["trello_token"] as String).isEmpty) {
       log.warning("trello_token is empty");
       print("You'll now need to authorize to Trello");
