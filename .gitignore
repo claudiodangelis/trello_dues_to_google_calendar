@@ -5,3 +5,4 @@ bin/_trello_dues_to_google_calendar.dart
 bin/trello.config.json
 bin/calendar.credentials.json
 bin/gcalendar.config.json
+google.credentials.json
